@@ -19,6 +19,8 @@ public class Organization {
     @Column(nullable = false)
     private String name;
 
+    private String location; // City/Area (e.g., Karur, Chennai, Coimbatore)
+
     @Enumerated(EnumType.STRING)
     private OrgType type;
 

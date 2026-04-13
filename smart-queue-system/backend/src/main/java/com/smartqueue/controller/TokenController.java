@@ -185,6 +185,149 @@ public class TokenController {
                 serviceId, targetDate);
         return ResponseEntity.ok(tokens);
     }
+    
+    @GetMapping("/staff/daily-report")
+    public ResponseEntity<?> getDailyReport(@RequestParam(required = false) String date) {
+        LocalDate targetDate;
+        if (date != null && !date.isEmpty()) {
+            try {
+                targetDate = LocalDate.parse(date);
+            } catch (Exception e) {
+                targetDate = LocalDate.now();
+            }
+        } else {
+            targetDate = LocalDate.now();
+        }
+        
+        // Get all tokens for the date grouped by organization
+        var allTokens = tokenRepository.findByTokenDateOrderByOrganizationIdAscCreatedAtAsc(targetDate);
+        
+        var response = buildReportResponse(allTokens, targetDate, targetDate);
+        response.put("reportType", "DAILY");
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/staff/weekly-report")
+    public ResponseEntity<?> getWeeklyReport(@RequestParam(required = false) String startDate) {
+        LocalDate endDate;
+        LocalDate start;
+        
+        if (startDate != null && !startDate.isEmpty()) {
+            try {
+                start = LocalDate.parse(startDate);
+            } catch (Exception e) {
+                start = LocalDate.now().minusDays(6);
+            }
+        } else {
+            start = LocalDate.now().minusDays(6); // Last 7 days
+        }
+        
+        endDate = start.plusDays(6);
+        
+        // Get all tokens for the week
+        var allTokens = tokenRepository.findByTokenDateBetweenOrderByOrganizationIdAscCreatedAtAsc(start, endDate);
+        
+        var response = buildReportResponse(allTokens, start, endDate);
+        response.put("reportType", "WEEKLY");
+        response.put("startDate", start);
+        response.put("endDate", endDate);
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/staff/monthly-report")
+    public ResponseEntity<?> getMonthlyReport(@RequestParam(required = false) String month) {
+        LocalDate startDate;
+        LocalDate endDate;
+        
+        if (month != null && !month.isEmpty()) {
+            try {
+                // Expecting format: YYYY-MM
+                startDate = LocalDate.parse(month + "-01");
+            } catch (Exception e) {
+                startDate = LocalDate.now().withDayOfMonth(1);
+            }
+        } else {
+            startDate = LocalDate.now().withDayOfMonth(1); // First day of current month
+        }
+        
+        endDate = startDate.plusMonths(1).minusDays(1); // Last day of month
+        
+        // Get all tokens for the month
+        var allTokens = tokenRepository.findByTokenDateBetweenOrderByOrganizationIdAscCreatedAtAsc(startDate, endDate);
+        
+        var response = buildReportResponse(allTokens, startDate, endDate);
+        response.put("reportType", "MONTHLY");
+        response.put("month", startDate.getMonth().toString());
+        response.put("year", startDate.getYear());
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    private java.util.Map<String, Object> buildReportResponse(List<Token> allTokens, LocalDate startDate, LocalDate endDate) {
+        // Group by organization
+        var reportByOrg = new java.util.HashMap<String, java.util.Map<String, Object>>();
+        
+        for (Token token : allTokens) {
+            String orgName = token.getOrganization().getName();
+            
+            if (!reportByOrg.containsKey(orgName)) {
+                var orgData = new java.util.HashMap<String, Object>();
+                orgData.put("organizationId", token.getOrganization().getId());
+                orgData.put("organizationName", orgName);
+                orgData.put("organizationType", token.getOrganization().getType());
+                orgData.put("location", token.getOrganization().getLocation());
+                orgData.put("totalTokens", 0);
+                orgData.put("attended", 0);
+                orgData.put("absent", 0);
+                orgData.put("waiting", 0);
+                orgData.put("serving", 0);
+                orgData.put("tokens", new java.util.ArrayList<java.util.Map<String, Object>>());
+                reportByOrg.put(orgName, orgData);
+            }
+            
+            var orgData = reportByOrg.get(orgName);
+            orgData.put("totalTokens", (int) orgData.get("totalTokens") + 1);
+            
+            // Count by status
+            if (token.getStatus() == TokenStatus.COMPLETED) {
+                orgData.put("attended", (int) orgData.get("attended") + 1);
+            } else if (token.getStatus() == TokenStatus.CANCELLED) {
+                orgData.put("absent", (int) orgData.get("absent") + 1);
+            } else if (token.getStatus() == TokenStatus.WAITING) {
+                orgData.put("waiting", (int) orgData.get("waiting") + 1);
+            } else if (token.getStatus() == TokenStatus.SERVING) {
+                orgData.put("serving", (int) orgData.get("serving") + 1);
+            }
+            
+            // Add token details
+            var tokenDetails = new java.util.HashMap<String, Object>();
+            tokenDetails.put("tokenNumber", token.getTokenNumber());
+            tokenDetails.put("customerName", token.getUser().getName());
+            tokenDetails.put("customerEmail", token.getUser().getEmail());
+            tokenDetails.put("phoneNumber", token.getPhoneNumber());
+            tokenDetails.put("serviceName", token.getService().getName());
+            tokenDetails.put("status", token.getStatus().name());
+            tokenDetails.put("appointmentTime", token.getAppointmentTime());
+            tokenDetails.put("tokenDate", token.getTokenDate());
+            tokenDetails.put("createdAt", token.getCreatedAt());
+            tokenDetails.put("completedAt", token.getCompletedAt());
+            tokenDetails.put("calledAt", token.getCalledAt());
+            
+            @SuppressWarnings("unchecked")
+            var tokensList = (java.util.List<java.util.Map<String, Object>>) orgData.get("tokens");
+            tokensList.add(tokenDetails);
+        }
+        
+        var response = new java.util.HashMap<String, Object>();
+        response.put("startDate", startDate);
+        response.put("endDate", endDate);
+        response.put("totalOrganizations", reportByOrg.size());
+        response.put("organizations", new java.util.ArrayList<>(reportByOrg.values()));
+        
+        return response;
+    }
 
     // Admin endpoints
     @GetMapping("/admin/tokens/all")

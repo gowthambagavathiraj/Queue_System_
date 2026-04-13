@@ -74,8 +74,8 @@ public class TokenService {
         LocalDateTime now = LocalDateTime.now();
         LocalTime currentTime = now.toLocalTime();
         
-        // Determine time gap based on organization type
-        int gapMinutes = org.getType() == Organization.OrgType.HOSPITAL ? 15 : 10;
+        // Set time gap to 15 minutes for all organizations
+        int gapMinutes = 15;
         
         // Get service times with fallback to defaults if null
         LocalTime serviceStartTime = service.getServiceStartTime() != null ? 
@@ -84,11 +84,11 @@ public class TokenService {
                 service.getServiceEndTime() : LocalTime.of(17, 0);
         
         // Real-time booking logic:
-        // - DURING service hours (9 AM - 5 PM): Can only book for TOMORROW
-        // - OUTSIDE service hours (before 9 AM or after 5 PM): Can book for TODAY
+        // - Before 5 PM: Can book for today or tomorrow
+        // - After 5 PM: Can only book for tomorrow
         
-        boolean isWithinServiceHours = !currentTime.isBefore(serviceStartTime) && currentTime.isBefore(serviceEndTime);
-        boolean canBookToday = !isWithinServiceHours; // Can book today only when service is NOT running
+        boolean isAfter5PM = currentTime.isAfter(LocalTime.of(17, 0)) || currentTime.equals(LocalTime.of(17, 0));
+        boolean canBookToday = !isAfter5PM; // Can book today only before 5 PM
         
         // Validate requested date
         if (requestedDate.isBefore(today)) {
@@ -100,8 +100,7 @@ public class TokenService {
             if (!canBookToday) {
                 Map<String, Object> result = new HashMap<>();
                 result.put("slots", new ArrayList<>());
-                result.put("message", "Service is currently running (" + serviceStartTime + " - " + serviceEndTime + 
-                        "). Booking closed for today. Please book for tomorrow.");
+                result.put("message", "Booking for today is closed after 5 PM. Please book for tomorrow.");
                 result.put("canBookToday", false);
                 return result;
             }
@@ -164,7 +163,7 @@ public class TokenService {
         result.put("currentTime", currentTime.toString());
         
         if (requestedDate.equals(today) && canBookToday) {
-            result.put("message", "Booking open for today (service not running)");
+            result.put("message", "Booking open for today (before 5 PM)");
         } else if (requestedDate.equals(today.plusDays(1))) {
             result.put("message", "Booking for tomorrow");
         }
@@ -204,13 +203,12 @@ public class TokenService {
         
         // DURING service hours: Can only book tomorrow
         // OUTSIDE service hours: Can book today
-        boolean isWithinServiceHours = !currentTime.isBefore(serviceStartTime) && currentTime.isBefore(serviceEndTime);
-        boolean canBookToday = !isWithinServiceHours;
+        boolean isAfter5PM = currentTime.isAfter(LocalTime.of(17, 0)) || currentTime.equals(LocalTime.of(17, 0));
+        boolean canBookToday = !isAfter5PM;
         
-        // Check if trying to book for today when service is running
+        // Check if trying to book for today when after 5 PM
         if (appointmentDate.equals(today) && !canBookToday) {
-            throw new RuntimeException("Service is currently running (" + serviceStartTime + " - " + 
-                    serviceEndTime + "). Booking closed for today. Please book for tomorrow.");
+            throw new RuntimeException("Booking for today is closed after 5 PM. Please book for tomorrow.");
         }
         
         // Only allow today (before service starts) or tomorrow
@@ -233,8 +231,8 @@ public class TokenService {
                     serviceEndTime);
         }
         
-        // Determine time gap based on organization type
-        int requiredGapMinutes = org.getType() == Organization.OrgType.HOSPITAL ? 15 : 10;
+        // Set time gap to 15 minutes for all organizations
+        int requiredGapMinutes = 15;
         
         // Check if time slot conflicts with existing appointments (enforce gap)
         LocalDateTime slotStart = appointmentTime.minusMinutes(requiredGapMinutes);
@@ -320,12 +318,13 @@ public class TokenService {
             next.setCalledAt(LocalDateTime.now());
             tokenRepository.save(next);
             
-            // Send notification
+            // Send email notification only
             try {
                 emailService.sendTokenCalled(next.getUser().getEmail(), 
                         next.getTokenNumber(), next.getService().getName());
             } catch (Exception ignored) {}
             
+            // Broadcast to service queue
             broadcastQueueUpdate(serviceId);
         }
     }
@@ -339,8 +338,20 @@ public class TokenService {
         if (req.isAttended()) {
             token.setStatus(TokenStatus.COMPLETED);
             token.setCompletedAt(LocalDateTime.now());
+            
+            // Send attended email notification
+            try {
+                emailService.sendTokenAttended(token.getUser().getEmail(), 
+                        token.getTokenNumber(), token.getService().getName());
+            } catch (Exception ignored) {}
         } else {
             token.setStatus(TokenStatus.CANCELLED);
+            
+            // Send absent email notification
+            try {
+                emailService.sendTokenAbsent(token.getUser().getEmail(), 
+                        token.getTokenNumber(), token.getService().getName());
+            } catch (Exception ignored) {}
             
             // Automatically call next token when current token is cancelled
             // Find the next waiting token with the closest appointment time
@@ -403,7 +414,7 @@ public class TokenService {
                     token.setCalledAt(now);
                     tokenRepository.save(token);
                     
-                    // Send notification
+                    // Send email notification only
                     try {
                         emailService.sendTokenCalled(token.getUser().getEmail(), 
                                 token.getTokenNumber(), token.getService().getName());

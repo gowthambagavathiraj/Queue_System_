@@ -13,6 +13,7 @@ import MyTokens from './components/queue/MyTokens';
 import EditProfile from './components/profile/EditProfile';
 import AdminDashboard from './components/admin/AdminDashboard';
 import OrganizationDetails from './components/admin/OrganizationDetails';
+import StaffDailyReport from './components/staff/StaffDailyReport';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/organization/:orgId" element={<ProtectedRoute roles={['ADMIN']}><OrganizationDetails /></ProtectedRoute>} />
+            <Route path="/staff/daily-report" element={<ProtectedRoute roles={['STAFF', 'ADMIN']}><StaffDailyReport /></ProtectedRoute>} />
             <Route path="/" element={<Navigate to="/welcome" />} />
           </Routes>
         </BrowserRouter>

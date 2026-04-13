@@ -73,4 +73,37 @@ public class EmailService {
         ));
         mailSender.send(message);
     }
+    
+    @Async
+    public void sendTokenAttended(String toEmail, String tokenNumber, String serviceName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Smart Queue - Service Completed");
+        message.setText(String.format(
+                "✅ Your service has been completed!\n\n" +
+                "Token Number: %s\n" +
+                "Service: %s\n\n" +
+                "Thank you for using Smart Queue Management System.\n" +
+                "We hope to serve you again soon!",
+                tokenNumber, serviceName
+        ));
+        mailSender.send(message);
+    }
+    
+    @Async
+    public void sendTokenAbsent(String toEmail, String tokenNumber, String serviceName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Smart Queue - Token Closed");
+        message.setText(String.format(
+                "❌ Your token has been marked as absent and closed.\n\n" +
+                "Token Number: %s\n" +
+                "Service: %s\n\n" +
+                "You did not attend your appointment at the scheduled time.\n" +
+                "Please book a new appointment if you still need the service.\n\n" +
+                "Thank you for using Smart Queue Management System.",
+                tokenNumber, serviceName
+        ));
+        mailSender.send(message);
+    }
 }

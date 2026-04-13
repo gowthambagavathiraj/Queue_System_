@@ -47,4 +47,8 @@ public interface TokenRepository extends JpaRepository<Token, Long> {
     List<Token> findByTokenDateAndStatus(LocalDate date, TokenStatus status);
     
     List<Token> findByServiceIdAndTokenDateOrderByQueuePosition(Long serviceId, LocalDate date);
+    
+    List<Token> findByTokenDateOrderByOrganizationIdAscCreatedAtAsc(LocalDate date);
+    
+    List<Token> findByTokenDateBetweenOrderByOrganizationIdAscCreatedAtAsc(LocalDate startDate, LocalDate endDate);
 }
