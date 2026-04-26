@@ -127,9 +127,10 @@ export default function StaffDailyReport() {
 
       <div style={styles.content}>
         {/* Report Type Tabs */}
-        <div style={styles.tabsContainer}>
+        <div style={styles.tabsContainer} className="fade-in">
           <button
             onClick={() => setReportType('DAILY')}
+            className="scale-in"
             style={{
               ...styles.tab,
               ...(reportType === 'DAILY' && styles.tabActive)
@@ -138,6 +139,7 @@ export default function StaffDailyReport() {
           </button>
           <button
             onClick={() => setReportType('WEEKLY')}
+            className="scale-in"
             style={{
               ...styles.tab,
               ...(reportType === 'WEEKLY' && styles.tabActive)
@@ -146,6 +148,7 @@ export default function StaffDailyReport() {
           </button>
           <button
             onClick={() => setReportType('MONTHLY')}
+            className="scale-in"
             style={{
               ...styles.tab,
               ...(reportType === 'MONTHLY' && styles.tabActive)
@@ -155,7 +158,7 @@ export default function StaffDailyReport() {
         </div>
 
         {/* Date/Period Selector */}
-        <div style={styles.selectorContainer}>
+        <div style={styles.selectorContainer} className="slide-in-left">
           {reportType === 'DAILY' && (
             <div style={styles.selectorGroup}>
               <label style={styles.selectorLabel}>Select Date:</label>
@@ -221,15 +224,15 @@ export default function StaffDailyReport() {
               <h2 style={styles.reportTitle}>{getReportTitle()}</h2>
             </div>
 
-            <div style={styles.summaryCards}>
-              <div style={styles.summaryCard}>
+            <div style={styles.summaryCards} className="fade-in">
+              <div style={styles.summaryCard} className="hover-lift">
                 <div style={styles.summaryIcon}>🏢</div>
                 <div>
                   <div style={styles.summaryValue}>{reportData.totalOrganizations}</div>
                   <div style={styles.summaryLabel}>Organizations</div>
                 </div>
               </div>
-              <div style={styles.summaryCard}>
+              <div style={styles.summaryCard} className="hover-lift">
                 <div style={styles.summaryIcon}>🎫</div>
                 <div>
                   <div style={styles.summaryValue}>
@@ -238,7 +241,7 @@ export default function StaffDailyReport() {
                   <div style={styles.summaryLabel}>Total Tokens</div>
                 </div>
               </div>
-              <div style={styles.summaryCard}>
+              <div style={styles.summaryCard} className="hover-lift">
                 <div style={styles.summaryIcon}>✅</div>
                 <div>
                   <div style={styles.summaryValue}>
@@ -247,7 +250,7 @@ export default function StaffDailyReport() {
                   <div style={styles.summaryLabel}>Attended</div>
                 </div>
               </div>
-              <div style={styles.summaryCard}>
+              <div style={styles.summaryCard} className="hover-lift">
                 <div style={styles.summaryIcon}>❌</div>
                 <div>
                   <div style={styles.summaryValue}>
@@ -260,7 +263,7 @@ export default function StaffDailyReport() {
 
             <div style={styles.organizationsList}>
               {reportData.organizations.map((org, idx) => (
-                <div key={idx} style={styles.orgCard}>
+                <div key={idx} style={styles.orgCard} className="slide-in-left stagger-item">
                   <div 
                     style={styles.orgHeader}
                     onClick={() => setExpandedOrg(expandedOrg === idx ? null : idx)}

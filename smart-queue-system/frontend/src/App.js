@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Register from './components/auth/Register';
 import Login from './components/auth/Login';
 import ForgotPassword from './components/auth/ForgotPassword';
+import VerifyEmail from './components/auth/VerifyEmail';
 import WelcomePage from './components/welcome/WelcomePage';
 import Dashboard from './components/dashboard/Dashboard';
 import QueuePage from './components/queue/QueuePage';
@@ -33,6 +34,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/welcome" element={<ProtectedRoute><WelcomePage /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/queue/:orgId" element={<ProtectedRoute><QueuePage /></ProtectedRoute>} />

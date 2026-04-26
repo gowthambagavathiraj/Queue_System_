@@ -1,7 +1,29 @@
+# Node modules
 node_modules/
 frontend/node_modules/
-backend/target/
+frontend/build/
+frontend/.env
+frontend/.env.local
 
+# Maven
+backend/target/
+backend/.mvn/
+backend/mvnw
+backend/mvnw.cmd
+
+# IDE
 .vscode/
-.env
-application.properties
+.idea/
+*.iml
+.DS_Store
+
+# Sensitive files - DO NOT COMMIT
+backend/src/main/resources/application.properties
+
+# Logs
+*.log
+logs/
+
+# OS
+Thumbs.db
+.DS_Store

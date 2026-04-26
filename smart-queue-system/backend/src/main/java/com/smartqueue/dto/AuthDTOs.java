@@ -24,6 +24,7 @@ public class AuthDTOs {
         private String name;
         private String email;
         private String role;
+        private String message;
         public AuthResponse(String token, String name, String email, String role) {
             this.token = token; this.name = name; this.email = email; this.role = role;
         }
@@ -31,6 +32,17 @@ public class AuthDTOs {
 
     @Data
     public static class ForgotPasswordRequest {
+        private String email;
+    }
+    
+    @Data
+    public static class VerifyEmailRequest {
+        private String email;
+        private String otp;
+    }
+    
+    @Data
+    public static class ResendOtpRequest {
         private String email;
     }
 

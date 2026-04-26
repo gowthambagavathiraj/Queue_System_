@@ -40,16 +40,81 @@ public class AuthService {
         user.setEmail(req.getEmail());
         user.setPassword(passwordEncoder.encode(req.getPassword()));
         user.setProvider(User.AuthProvider.LOCAL);
+        user.setEmailVerified(false); // Not verified yet
+        
+        // Generate OTP for email verification
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setOtpCode(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        
         userRepository.save(user);
+        
+        // Send verification email
+        emailService.sendVerificationOtp(user.getEmail(), otp, user.getName());
+        
+        // Return response without token (user needs to verify first)
+        AuthResponse response = new AuthResponse(null, user.getName(), user.getEmail(), user.getRole().name());
+        response.setMessage("Registration successful! Please check your email for verification OTP.");
+        return response;
+    }
+    
+    public AuthResponse verifyEmail(VerifyEmailRequest req) {
+        User user = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (user.isEmailVerified()) {
+            throw new RuntimeException("Email already verified");
+        }
+        
+        if (user.getOtpCode() == null || !user.getOtpCode().equals(req.getOtp())) {
+            throw new RuntimeException("Invalid OTP");
+        }
+        
+        if (user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP expired");
+        }
+        
+        // Mark email as verified
+        user.setEmailVerified(true);
+        user.setOtpCode(null);
+        user.setOtpExpiry(null);
+        userRepository.save(user);
+        
+        // Generate token after verification
         String token = jwtUtils.generateToken(user.getEmail(), user.getRole().name());
         return new AuthResponse(token, user.getName(), user.getEmail(), user.getRole().name());
     }
+    
+    public void resendVerificationOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (user.isEmailVerified()) {
+            throw new RuntimeException("Email already verified");
+        }
+        
+        // Generate new OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setOtpCode(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(10));
+        userRepository.save(user);
+        
+        // Resend verification email
+        emailService.sendVerificationOtp(user.getEmail(), otp, user.getName());
+    }
 
     public AuthResponse login(LoginRequest req) {
+        User user = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+        
+        // Check if email is verified (only for LOCAL provider)
+        if (user.getProvider() == User.AuthProvider.LOCAL && !user.isEmailVerified()) {
+            throw new RuntimeException("Email not verified. Please check your email for verification OTP.");
+        }
+        
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
-        User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        
         String token = jwtUtils.generateToken(user.getEmail(), user.getRole().name());
         return new AuthResponse(token, user.getName(), user.getEmail(), user.getRole().name());
     }

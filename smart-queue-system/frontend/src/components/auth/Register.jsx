@@ -19,9 +19,9 @@ export default function Register() {
     setLoading(true);
     try {
       const res = await authAPI.register(form);
-      login(res.data);
-      toast.success('Registration successful!');
-      navigate('/welcome');
+      toast.success(res.data.message || 'Registration successful! Please verify your email.');
+      // Redirect to verification page with email and name
+      navigate('/verify-email', { state: { email: form.email, name: form.name } });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
     } finally {

@@ -67,8 +67,8 @@ export default function QueuePage() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
     
-    // Show today if before 5 PM (17:00)
-    if (currentHour < 17) {
+    // Show today only if before 9 AM (09:00)
+    if (currentHour < 9) {
       dates.push({
         value: todayStr,
         label: 'Today',
@@ -84,8 +84,8 @@ export default function QueuePage() {
     });
     
     setAvailableDates(dates);
-    // Default to today if before 5 PM, otherwise tomorrow
-    setSelectedDate(currentHour < 17 ? todayStr : tomorrowStr);
+    // Default to today if before 9 AM, otherwise tomorrow
+    setSelectedDate(currentHour < 9 ? todayStr : tomorrowStr);
   };
 
   const checkAvailability = async () => {
@@ -696,10 +696,10 @@ const styles = {
   dateButton: { flex: 1, padding: '14px 20px', border: '2px solid #e8e8e8', borderRadius: 10,
     background: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' },
   dateButtonSelected: { background: '#667eea', color: 'white', borderColor: '#667eea' },
-  slotsGrid: { display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 },
+  slotsGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 8 },
   slotButton: { padding: '14px 20px', border: '2px solid #e8e8e8', borderRadius: 10,
     background: 'white', fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-    width: '100%', textAlign: 'left' },
+    textAlign: 'center' },
   slotButtonDisabled: { background: '#f5f5f5', color: '#ccc', cursor: 'not-allowed', 
     borderColor: '#f0f0f0' },
   slotButtonSelected: { background: '#667eea', color: 'white', borderColor: '#667eea' },

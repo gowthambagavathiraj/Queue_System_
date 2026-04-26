@@ -84,11 +84,11 @@ public class TokenService {
                 service.getServiceEndTime() : LocalTime.of(17, 0);
         
         // Real-time booking logic:
-        // - Before 5 PM: Can book for today or tomorrow
-        // - After 5 PM: Can only book for tomorrow
+        // - Before 9 AM: Can book for today or tomorrow
+        // - After 9 AM: Can only book for tomorrow
         
-        boolean isAfter5PM = currentTime.isAfter(LocalTime.of(17, 0)) || currentTime.equals(LocalTime.of(17, 0));
-        boolean canBookToday = !isAfter5PM; // Can book today only before 5 PM
+        boolean isAfter9AM = currentTime.isAfter(LocalTime.of(9, 0)) || currentTime.equals(LocalTime.of(9, 0));
+        boolean canBookToday = !isAfter9AM; // Can book today only before 9 AM
         
         // Validate requested date
         if (requestedDate.isBefore(today)) {
@@ -100,7 +100,7 @@ public class TokenService {
             if (!canBookToday) {
                 Map<String, Object> result = new HashMap<>();
                 result.put("slots", new ArrayList<>());
-                result.put("message", "Booking for today is closed after 5 PM. Please book for tomorrow.");
+                result.put("message", "Booking for today is closed after 9 AM. Please book for tomorrow.");
                 result.put("canBookToday", false);
                 return result;
             }
@@ -108,7 +108,7 @@ public class TokenService {
             // Booking for tomorrow - always allowed
         } else {
             // Trying to book beyond tomorrow
-            throw new RuntimeException("Can only book for today (outside service hours) or tomorrow");
+            throw new RuntimeException("Can only book for today (before 9 AM) or tomorrow");
         }
         
         // Generate time slots from service start to end time
@@ -163,7 +163,7 @@ public class TokenService {
         result.put("currentTime", currentTime.toString());
         
         if (requestedDate.equals(today) && canBookToday) {
-            result.put("message", "Booking open for today (before 5 PM)");
+            result.put("message", "Booking open for today (before 9 AM)");
         } else if (requestedDate.equals(today.plusDays(1))) {
             result.put("message", "Booking for tomorrow");
         }
@@ -201,14 +201,14 @@ public class TokenService {
                 ? service.getServiceEndTime() 
                 : LocalTime.of(17, 0); // Default 5:00 PM
         
-        // DURING service hours: Can only book tomorrow
-        // OUTSIDE service hours: Can book today
-        boolean isAfter5PM = currentTime.isAfter(LocalTime.of(17, 0)) || currentTime.equals(LocalTime.of(17, 0));
-        boolean canBookToday = !isAfter5PM;
+        // Booking logic: After 9 AM, can only book tomorrow
+        // Before 9 AM: Can book today
+        boolean isAfter9AM = currentTime.isAfter(LocalTime.of(9, 0)) || currentTime.equals(LocalTime.of(9, 0));
+        boolean canBookToday = !isAfter9AM;
         
-        // Check if trying to book for today when after 5 PM
+        // Check if trying to book for today when after 9 AM
         if (appointmentDate.equals(today) && !canBookToday) {
-            throw new RuntimeException("Booking for today is closed after 5 PM. Please book for tomorrow.");
+            throw new RuntimeException("Booking for today is closed after 9 AM. Please book for tomorrow.");
         }
         
         // Only allow today (before service starts) or tomorrow
@@ -217,7 +217,7 @@ public class TokenService {
         }
         
         if (appointmentDate.isAfter(today.plusDays(1))) {
-            throw new RuntimeException("Can only book for today (outside service hours) or tomorrow");
+            throw new RuntimeException("Can only book for today (before 9 AM) or tomorrow");
         }
         
         // Check if appointment time is within service hours
@@ -377,18 +377,41 @@ public class TokenService {
         broadcastQueueUpdate(serviceId);
     }
 
-    // Check for reminders every minute
-    @Scheduled(fixedRate = 60000)
+    // Send email reminders 30 minutes before appointment time
+    @Scheduled(fixedRate = 60000) // Check every minute
     public void sendReminders() {
-        List<Token> pending = tokenRepository.findPendingReminders();
-        for (Token token : pending) {
-            if (token.getEstimatedWaitMinutes() <= 20 && token.getEstimatedWaitMinutes() > 0) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime reminderTime = now.plusMinutes(30);
+        
+        // Find tokens with appointments in the next 30-31 minutes that haven't been reminded
+        LocalDateTime startWindow = reminderTime;
+        LocalDateTime endWindow = reminderTime.plusMinutes(1);
+        
+        List<Token> upcomingTokens = tokenRepository.findByStatusAndAppointmentTimeBetween(
+                TokenStatus.WAITING, startWindow, endWindow);
+        
+        for (Token token : upcomingTokens) {
+            // Check if reminder already sent
+            if (!token.isReminderSent()) {
                 try {
-                    emailService.sendReminder(token.getUser().getEmail(),
-                            token.getTokenNumber(), token.getEstimatedWaitMinutes());
+                    String appointmentTimeStr = token.getAppointmentTime()
+                            .format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a, MMM dd"));
+                    
+                    emailService.sendReminder(
+                            token.getUser().getEmail(),
+                            token.getTokenNumber(),
+                            30 // 30 minutes before appointment
+                    );
+                    
+                    // Mark as reminded
                     token.setReminderSent(true);
                     tokenRepository.save(token);
-                } catch (Exception ignored) {}
+                    
+                    System.out.println("Email reminder sent for token: " + token.getTokenNumber() + 
+                                     " - Appointment at: " + appointmentTimeStr);
+                } catch (Exception e) {
+                    System.err.println("Failed to send email reminder: " + e.getMessage());
+                }
             }
         }
     }

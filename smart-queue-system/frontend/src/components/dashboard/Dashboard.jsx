@@ -144,10 +144,12 @@ export default function Dashboard() {
           <>
             {!selectedType ? (
               <div style={styles.typeGrid}>
-                {Object.keys(groupedOrgs).map(type => {
+                {Object.keys(groupedOrgs).map((type, index) => {
                   const orgCount = groupedOrgs[type].length;
                   return (
-                    <div key={type} onClick={() => setSelectedType(type)} style={styles.typeCard}>
+                    <div key={type} onClick={() => setSelectedType(type)} 
+                      className="fade-in hover-lift stagger-item"
+                      style={styles.typeCard}>
                       <div style={styles.typeIcon}>
                         {type === 'HOSPITAL' ? '🏥' : type === 'BANK' ? '🏦' : '🏢'}
                       </div>
@@ -192,13 +194,13 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div style={styles.orgGrid}>
-                    {groupedOrgs[selectedType].map(org => {
+                    {groupedOrgs[selectedType].map((org, index) => {
                     const avail = availability[org.id];
                     const stats = orgStats[org.id];
                     const isAvailable = !avail || avail.available;
                     const hasNoServices = org.services?.length === 0;
                     return (
-                      <div key={org.id} style={{ position: 'relative' }}>
+                      <div key={org.id} className="fade-in hover-lift stagger-item" style={{ position: 'relative' }}>
                         <div onClick={() => handleOrgClick(org)}
                           style={{ ...styles.orgCard, background: ORG_COLORS[org.type] || '#667eea',
                             cursor: 'pointer', opacity: hasNoServices ? 0.7 : 1 }}>

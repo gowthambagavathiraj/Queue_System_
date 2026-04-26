@@ -21,6 +21,24 @@ public class EmailService {
                 "\n\nThis OTP will expire in 10 minutes.\n\nDo not share this with anyone.");
         mailSender.send(message);
     }
+    
+    @Async
+    public void sendVerificationOtp(String toEmail, String otp, String name) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("Smart Queue - Email Verification");
+        message.setText(String.format(
+                "Hello %s,\n\n" +
+                "Welcome to Smart Queue Management System!\n\n" +
+                "Your email verification OTP is: %s\n\n" +
+                "This OTP will expire in 10 minutes.\n\n" +
+                "Please enter this OTP to complete your registration.\n\n" +
+                "If you did not create this account, please ignore this email.\n\n" +
+                "Thank you!",
+                name, otp
+        ));
+        mailSender.send(message);
+    }
 
     @Async
     public void sendTokenConfirmation(String toEmail, String tokenNumber, String serviceName,
@@ -40,7 +58,7 @@ public class EmailService {
                 "Estimated Wait: ~%d minutes\n" +
                 "Appointment Time: %s\n\n" +
                 "Please arrive by the appointment time.\n" +
-                "You will receive a reminder 20 minutes before your turn.",
+                "You will receive a reminder 30 minutes before your appointment.",
                 tokenNumber, serviceName, queuePosition, estimatedWait, appointmentTimeStr
         ));
         mailSender.send(message);

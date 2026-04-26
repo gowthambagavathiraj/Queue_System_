@@ -61,4 +61,23 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+    
+    @PostMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestBody VerifyEmailRequest req) {
+        try {
+            return ResponseEntity.ok(authService.verifyEmail(req));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestBody ResendOtpRequest req) {
+        try {
+            authService.resendVerificationOtp(req.getEmail());
+            return ResponseEntity.ok(Map.of("message", "Verification OTP resent to your email"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

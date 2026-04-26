@@ -24,16 +24,16 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         // Only initialize admin if doesn't exist
-        if (!userRepository.existsByEmail("gowthamknp143@gmail.com")) {
+        if (!userRepository.existsByEmail("admin@smartqueue.com")) {
             // Create Admin User with unique credentials
             User admin = new User();
-            admin.setName("Gowtham");
-            admin.setEmail("gowthamknp143@gmail.com");
-            admin.setPassword(passwordEncoder.encode("Gowtham@2024"));
+            admin.setName("System Administrator");
+            admin.setEmail("admin@smartqueue.com");
+            admin.setPassword(passwordEncoder.encode("Admin@2024"));
             admin.setRole(User.Role.ADMIN);
             admin.setEmailVerified(true);
             userRepository.save(admin);
-            System.out.println("=== Admin created: gowthamknp143@gmail.com / Gowtham@2024 ===");
+            System.out.println("=== Admin created: admin@smartqueue.com / Admin@2024 ===");
         }
 
         // Create Staff User if doesn't exist
